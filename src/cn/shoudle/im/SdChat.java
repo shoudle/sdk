@@ -23,16 +23,17 @@ public class SdChat {
 	public static boolean DEBUG_MODE=true;
 	
 	private static Object instance_lock;
-	private SdService mSdService;
-	private static Context mContext;
+	private static SdService mSdService;
+	private static Context mContext=null;
 	private static SdChat instance;
 	static{
 		instance_lock=new Object();
 	}
 	
-	public static SdChat getInstance(){
+	public static SdChat getInstance(Context context){
 
 		synchronized (instance_lock) {
+			mContext=context;
 			if(instance==null){
 				instance=new SdChat();	
 			}
@@ -49,7 +50,11 @@ public class SdChat {
 	 * 初始化;
 	 * @param context
 	 */
-	public void init(Context context){
+	public void init(){
+		
+		if(mContext==null)
+			return;
+		
 		Intent mServiceIntent = new Intent(mContext, SdService.class);
 		mContext.bindService(mServiceIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
 		SdLog.i(TAG, "[bind service]");
@@ -62,7 +67,7 @@ public class SdChat {
 		
 	}
 	
-	ServiceConnection mServiceConnection = new ServiceConnection(){
+	private ServiceConnection mServiceConnection = new ServiceConnection(){
 
 		@Override
 		public void onServiceConnected(ComponentName name, IBinder service) {
@@ -82,4 +87,11 @@ public class SdChat {
 			mSdService = null;
 		}
 	};
+	
+	/**
+	 * 主要是解除服务绑定;
+	 */
+	public void destory(){
+		mSdService.unbindService(mServiceConnection);
+	}
 }

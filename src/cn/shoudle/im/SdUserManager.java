@@ -34,7 +34,7 @@ public class SdUserManager {
 	 */
 	public void login(String userName,String password,SaveListener saveListener){
 		
-		SdService sdService=SdChat.getInstance().getService();
+		SdService sdService=SdChat.getInstance(mContext).getService();
 		
 		if(sdService!=null){
 			sdService.Login(userName, password,saveListener);
@@ -51,7 +51,7 @@ public class SdUserManager {
 	 */
 	public void register(String userName,String password,SaveListener saveListener){
 		
-		SdService sdService=SdChat.getInstance().getService();
+		SdService sdService=SdChat.getInstance(mContext).getService();
 		
 		if(sdService!=null){
 			sdService.register(userName, password, saveListener);
@@ -65,7 +65,7 @@ public class SdUserManager {
 	 */
 	public void logout(){
 	
-		SdService sdService=SdChat.getInstance().getService();
+		SdService sdService=SdChat.getInstance(mContext).getService();
 		
 		if(sdService!=null){
 			sdService.logout();
