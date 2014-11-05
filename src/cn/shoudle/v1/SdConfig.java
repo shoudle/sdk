@@ -12,10 +12,6 @@ public class SdConfig {
 	//默认端口;
 	public static final String DEFAULT_PORT = "5222";
 	
-	//调试模式;
-	public static final boolean DEBUG=true;
-	
 	public static final boolean SMACK_DEBUG=true;
-	
 	public static final boolean REQUIRE_SSL=false;
 }

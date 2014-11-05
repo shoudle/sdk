@@ -1,10 +1,11 @@
 package cn.shoudle.util;
 
-import cn.shoudle.v1.SdConfig;
+import android.R.anim;
+import cn.shoudle.im.SdChat;
 
 public class SdLog {
 
-	public static boolean isDebug = SdConfig.DEBUG;
+	public static boolean isDebug = SdChat.DEBUG_MODE;
 
 	public static void v(String tag, String msg) {
 		if (isDebug)
@@ -56,5 +57,8 @@ public class SdLog {
 			android.util.Log.e(tag, msg, t);
 	}
 
-	
+	public static void i(String msg){
+		if(isDebug)
+			android.util.Log.i("", msg);
+	}
 }
