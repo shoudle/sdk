@@ -7,7 +7,7 @@ package cn.shoudle.v1;
 public class SdConfig {
 
 	//服务端ip;
-	public static final String SD_SERVER = "192.168.1.106";
+	public static final String SD_SERVER = "10.165.23.149";
 	
 	//默认端口;
 	public static final String DEFAULT_PORT = "5222";
