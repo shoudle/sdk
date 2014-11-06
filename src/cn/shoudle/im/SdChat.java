@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
 import cn.shoudle.service.SdService;
-import cn.shoudle.smack.SdException;
 import cn.shoudle.util.SdLog;
 
 /**
@@ -75,8 +74,8 @@ public class SdChat {
 			
 			if(mSdService==null){
 				try {
-					throw new SdException("[bind service failed!]");
-				} catch (SdException e) {
+					throw new Exception("[bind service failed!]");
+				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}

@@ -2,9 +2,12 @@ package cn.shoudle.v1;
 
 public class SdMessage {
 
-	public static final  String MSG_NETWORK_ERROR="network error";//网络错误;
-	public static final  String MSG_PONG_TIMEOUT="pong_timeout";  //连接超时;
-	public static final  String MSG_LOGIN_FAILED="login_failed";  //登录失败;
-	public static final  String MSG_LOGIN_SUCCESS="login_success";//登录成功;
-	public static final  String MSG_CORE_SERVICE_NULL="core service null"; //核心服务为空; 
+	public static final  String MSG_NETWORK_ERROR="网络错误"; 
+	public static final  String MSG_LOGIN_FAILED="登录失败";  
+	public static final  String MSG_LOGIN_SUCCESS="登录成功"; 
+	public static final  String MSG_CORE_SERVICE_NULL="核心服务为空"; 
+	public static final  String MSG_RGISTER_FAILED="注册失败";
+	public static final  String MSG_RGISTER_SUCCESS="注册成功";
+	public static final  String MSG_ACCOUNT_EXIST="用户已存在";
+	public static final  String MSG_SERVICE_ERROR="服务器错误";
 }
