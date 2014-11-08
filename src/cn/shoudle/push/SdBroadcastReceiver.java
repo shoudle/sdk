@@ -2,11 +2,10 @@ package cn.shoudle.push;
 
 import java.util.ArrayList;
 
+import cn.shoudle.im.v1.SdConstants;
 import cn.shoudle.listener.EventListener;
-import cn.shoudle.service.SdService;
 import cn.shoudle.util.PreferenceUtils;
 import cn.shoudle.util.SdLog;
-import cn.shoudle.v1.SdConstants;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;

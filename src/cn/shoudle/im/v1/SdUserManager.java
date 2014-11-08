@@ -1,11 +1,8 @@
-package cn.shoudle.im;
+package cn.shoudle.im.v1;
 
 import cn.shoudle.listener.SaveListener;
-import cn.shoudle.service.SdService;
-import cn.shoudle.util.PreferenceUtils;
+import cn.shoudle.push.SdService;
 import cn.shoudle.util.SdLog;
-import cn.shoudle.v1.SdConstants;
-import cn.shoudle.v1.SdMessage;
 import android.content.Context;
 /**
  * 用户管理类;
@@ -41,7 +38,7 @@ public class SdUserManager {
 			sdService.login(userName, password,saveListener);
 			
 		}else {
-			saveListener.onFailure(SdMessage.MSG_CORE_SERVICE_NULL);
+			saveListener.onFailure(SdConstants.MSG_CORE_SERVICE_NULL);
 		}
 	}
 	
@@ -59,7 +56,7 @@ public class SdUserManager {
 			sdService.register(account, password, saveListener);
 			
 		}else {
-			saveListener.onFailure(SdMessage.MSG_CORE_SERVICE_NULL);
+			saveListener.onFailure(SdConstants.MSG_CORE_SERVICE_NULL);
 		}
 	}
 	

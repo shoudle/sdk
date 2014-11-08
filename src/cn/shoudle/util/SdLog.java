@@ -1,7 +1,7 @@
 package cn.shoudle.util;
 
 import android.R.anim;
-import cn.shoudle.im.SdChat;
+import cn.shoudle.im.v1.SdChat;
 
 public class SdLog {
 

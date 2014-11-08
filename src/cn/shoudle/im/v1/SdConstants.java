@@ -1,7 +1,15 @@
-package cn.shoudle.v1;
+package cn.shoudle.im.v1;
 
-public class SdMessage {
+public class SdConstants {
 
+	public final static String CONS_RESSOURCE = "account_resource";
+	public final static String CONS_ACCOUNT = "account";
+	public final static String CONS_PASSWORD = "password";
+	public final static String CONS_AUTO_RECONNECT = "reconnect";
+	public final static String CONS_AUTO_START = "auto_start";
+	public final static String CONS_FIRST_LOGIN="first_login";
+	public final static String CONS_ACTION_REGISTER_SUCCESS_FINISH="action.register.success.finish";
+	
 	public static final  String MSG_NETWORK_ERROR="当前网络不可用，请检查网络设置"; 
 	public static final  String MSG_LOGIN_FAILED="登录失败";  
 	public static final  String MSG_LOGIN_SUCCESS="登录成功"; 

@@ -1,11 +1,11 @@
-package cn.shoudle.im;
+package cn.shoudle.im.v1;
 
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
-import cn.shoudle.service.SdService;
+import cn.shoudle.push.SdService;
 import cn.shoudle.util.SdLog;
 
 /**

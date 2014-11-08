@@ -1,16 +1,14 @@
-package cn.shoudle.service;
+package cn.shoudle.push;
 
 import java.util.List;
 
+import cn.shoudle.im.v1.SdConstants;
 import cn.shoudle.listener.EventListener;
 import cn.shoudle.listener.SaveListener;
-import cn.shoudle.push.SdBroadcastReceiver;
 import cn.shoudle.smack.XmppConnectionManager;
-import cn.shoudle.util.NetUtil;
+import cn.shoudle.util.NetWorkUtil;
 import cn.shoudle.util.PreferenceUtils;
 import cn.shoudle.util.SdLog;
-import cn.shoudle.v1.SdConstants;
-import cn.shoudle.v1.SdMessage;
 import android.app.ActivityManager;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -84,6 +82,17 @@ public class SdService extends Service implements EventListener{
 		SdBroadcastReceiver.mListeners.add(this);
 		mPAlarmIntent = PendingIntent.getBroadcast(this, 0, mAlarmIntent,PendingIntent.FLAG_UPDATE_CURRENT);
 		registerReceiver(mAlarmReceiver, new IntentFilter(RECONNECT_ALARM));
+		
+		String userName=PreferenceUtils.getPrefString(this, SdConstants.CONS_ACCOUNT,"");
+		String password=PreferenceUtils.getPrefString(this, SdConstants.CONS_PASSWORD,"");
+		
+		if (!TextUtils.isEmpty(userName) && !TextUtils.isEmpty(password)){
+		
+			login(userName, password, null);
+			
+			SdLog.i("自动连接!");
+			
+		}
 	}
 
     /**
@@ -180,7 +189,7 @@ public class SdService extends Service implements EventListener{
 			return;
 		
 		// 无网络连接时,直接返回
-		if (NetUtil.getNetworkState(this) == NetUtil.NETWORN_NONE) {
+		if (NetWorkUtil.getNetworkState(this) == NetWorkUtil.NETWORN_NONE) {
 			((AlarmManager) getSystemService(Context.ALARM_SERVICE)).cancel(mPAlarmIntent);
 			return;
 		}
@@ -270,8 +279,8 @@ public class SdService extends Service implements EventListener{
 	 */
 	@Override
 	public void onNetChange() {
-		if (NetUtil.getNetworkState(this) == NetUtil.NETWORN_NONE) {// 如果是网络断开，不作处理
-			connectionFailed(SdMessage.MSG_NETWORK_ERROR);
+		if (NetWorkUtil.getNetworkState(this) == NetWorkUtil.NETWORN_NONE) {// 如果是网络断开，不作处理
+			connectionFailed(SdConstants.MSG_NETWORK_ERROR);
 			return;
 		}
 		if (isAuthenticated())// 如果已经连接上，直接返回
@@ -305,11 +314,11 @@ public class SdService extends Service implements EventListener{
 		this.mAccount=account;
 		this.mPassword=password;
 		
-		if (NetUtil.getNetworkState(this) == NetUtil.NETWORN_NONE) {
-			connectionFailed(SdMessage.MSG_NETWORK_ERROR);
+		if (NetWorkUtil.getNetworkState(this) == NetWorkUtil.NETWORN_NONE) {
+			connectionFailed(SdConstants.MSG_NETWORK_ERROR);
 			
 			if(saveListener!=null){
-				saveListener.onFailure(SdMessage.MSG_NETWORK_ERROR);	
+				saveListener.onFailure(SdConstants.MSG_NETWORK_ERROR);	
 			}
 			return;
 		}
@@ -328,10 +337,10 @@ public class SdService extends Service implements EventListener{
 						
 					} else {
 						// 登陆失败
-						postConnectionFailed(SdMessage.MSG_LOGIN_FAILED);
+						postConnectionFailed(SdConstants.MSG_LOGIN_FAILED);
 						
 						if(saveListener!=null){
-							saveListener.onFailure(SdMessage.MSG_LOGIN_FAILED);
+							saveListener.onFailure(SdConstants.MSG_LOGIN_FAILED);
 						}
 					}
 				} catch (Exception e) {
@@ -342,7 +351,7 @@ public class SdService extends Service implements EventListener{
 					postConnectionFailed(message);
 					
 					if(saveListener!=null){
-						saveListener.onFailure(SdMessage.MSG_LOGIN_FAILED);
+						saveListener.onFailure(SdConstants.MSG_LOGIN_FAILED);
 					}
 					
 					SdLog.i("XMPPException in doConnect():");
@@ -366,8 +375,8 @@ public class SdService extends Service implements EventListener{
 	 * @param saveListener
 	 */
 	public void register(final String account, final String password,final SaveListener saveListener){
-		if (NetUtil.getNetworkState(this) == NetUtil.NETWORN_NONE) {
-			saveListener.onFailure(SdMessage.MSG_NETWORK_ERROR);
+		if (NetWorkUtil.getNetworkState(this) == NetWorkUtil.NETWORN_NONE) {
+			saveListener.onFailure(SdConstants.MSG_NETWORK_ERROR);
 			return ;
 		}
 		
@@ -377,7 +386,7 @@ public class SdService extends Service implements EventListener{
 				
 				try {
 					String strResult=XmppConnectionManager.getInstance().register(account, password);
-					if(strResult.equals(SdMessage.MSG_RGISTER_SUCCESS)){
+					if(strResult.equals(SdConstants.MSG_RGISTER_SUCCESS)){
 						
 						saveListener.onSuccess();
 						
@@ -390,7 +399,7 @@ public class SdService extends Service implements EventListener{
 					if (e.getCause() != null){
 						message += "\n" + e.getCause().getLocalizedMessage();
 					}
-					saveListener.onFailure(SdMessage.MSG_RGISTER_FAILED);
+					saveListener.onFailure(SdConstants.MSG_RGISTER_FAILED);
 					SdLog.i("YaximXMPPException in doConnect():");
 					e.printStackTrace();
 				} finally {

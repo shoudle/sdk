@@ -57,29 +57,14 @@ import org.jivesoftware.smackx.provider.StreamInitiationProvider;
 import org.jivesoftware.smackx.provider.VCardProvider;
 import org.jivesoftware.smackx.provider.XHTMLExtensionProvider;
 import org.jivesoftware.smackx.search.UserSearch;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import org.jivesoftware.smackx.search.UserSearchManager;
 
 import android.graphics.drawable.Drawable;
-import cn.shoudle.service.SdService;
+import cn.shoudle.im.v1.SdConfig;
+import cn.shoudle.im.v1.SdConstants;
+import cn.shoudle.push.SdService;
 import cn.shoudle.util.FormatToolsUtil;
 import cn.shoudle.util.SdLog;
-import cn.shoudle.v1.SdConfig;
-import cn.shoudle.v1.SdMessage;
 
 /**
  * 服务器连接类;
@@ -211,13 +196,11 @@ public class XmppConnectionManager {
 	 */
 	public boolean login(String account,String password){
 		try{
-			if(getConnection()==null){
-				return false;
-			}
-			if(mXmppConnection.isConnected()){
+			if(mXmppConnection!=null&&mXmppConnection.isConnected()){
 				mXmppConnection.disconnect();
 				mXmppConnection=null;
 			}
+			
 			getConnection().login(account, password);
 			
 			//更改在线状态;
@@ -246,7 +229,7 @@ public class XmppConnectionManager {
 		
 		if (getConnection() == null)  
 		{
-            return SdMessage.MSG_SERVICE_ERROR;  
+            return SdConstants.MSG_SERVICE_ERROR;  
 		}
 		
         Registration reg = new Registration();  
@@ -269,17 +252,17 @@ public class XmppConnectionManager {
         collector.cancel();  
         if (result == null) {  
             SdLog.e("regist", "No response from server.");  
-            return SdMessage.MSG_SERVICE_ERROR;  
+            return SdConstants.MSG_SERVICE_ERROR;  
         } else if (result.getType() == IQ.Type.RESULT) {  
         	SdLog.v("regist", "regist success.");  
-            return SdMessage.MSG_RGISTER_SUCCESS;  
+            return SdConstants.MSG_RGISTER_SUCCESS;  
         } else {   
             if (result.getError().toString().equalsIgnoreCase("conflict(409)")) {  
             	SdLog.e("regist", "IQ.Type.ERROR: " + result.getError().toString());  
-                return SdMessage.MSG_ACCOUNT_EXIST;  
+                return SdConstants.MSG_ACCOUNT_EXIST;  
             } else {  
             	SdLog.e("regist", "IQ.Type.ERROR: "  + result.getError().toString());  
-                return SdMessage.MSG_RGISTER_FAILED;  
+                return SdConstants.MSG_RGISTER_FAILED;  
             }  
         }  
     }  

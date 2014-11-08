@@ -1,4 +1,4 @@
-package cn.shoudle.v1;
+package cn.shoudle.im.v1;
 
 /**
  * 配置信息;
