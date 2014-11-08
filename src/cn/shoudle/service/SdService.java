@@ -5,6 +5,7 @@ import java.util.List;
 import cn.shoudle.listener.EventListener;
 import cn.shoudle.listener.SaveListener;
 import cn.shoudle.push.SdBroadcastReceiver;
+import cn.shoudle.smack.XmppConnectionManager;
 import cn.shoudle.util.NetUtil;
 import cn.shoudle.util.PreferenceUtils;
 import cn.shoudle.util.SdLog;
@@ -24,16 +25,19 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.text.TextUtils;
 
+/**
+ * 核心服务类,所有跟服务器的操作应该在这里进行实现;
+ * @author Render;
+ *
+ */
 public class SdService extends Service implements EventListener{
 
 	private static final String TAG = "SdService";
-	
 	public static final String LOGOUT = "logout";// 手动退出
 
 	private IBinder mBinder = new SdBinder();
-	private Thread mConnectingThread;
 	private Handler mMainHandler = new Handler();
-	
+	private Thread mConnectingThread;
 	private static final int RECONNECT_AFTER = 5;
 	private static final int RECONNECT_MAXIMUM = 10 * 60;// 最大重连时间间隔
 	private static final String RECONNECT_ALARM = "cn.shoudle.RECONNECT_ALARM";
@@ -44,7 +48,6 @@ public class SdService extends Service implements EventListener{
 	
 	// 自动重连 end
 	private ActivityManager mActivityManager;
-	private String mPackageName;
 	private String mAccount;
 	private String mPassword;
 	
@@ -75,148 +78,43 @@ public class SdService extends Service implements EventListener{
 		super.onCreate();
 		
 		//把服务对象设置到连接管理器中;
-		SdConnectionManager.getInstance().setSdService(this);
+		XmppConnectionManager.getInstance().setSdService(this);
 		
 		//把该服务添加到广播事件中;
 		SdBroadcastReceiver.mListeners.add(this);
-		mPackageName = getPackageName();
 		mPAlarmIntent = PendingIntent.getBroadcast(this, 0, mAlarmIntent,PendingIntent.FLAG_UPDATE_CURRENT);
 		registerReceiver(mAlarmReceiver, new IntentFilter(RECONNECT_ALARM));
 	}
 
+    /**
+     * 监听手机开机时，是否直接连接;
+     */
+	@Override
+	public int onStartCommand(Intent intent, int flags, int startId) {
+		SdLog.i(TAG, "called onStartCommand()");
+	
+		if (intent != null
+				&& intent.getAction() != null
+				&& TextUtils.equals(intent.getAction(),
+						SdBroadcastReceiver.BOOT_COMPLETED_ACTION)) {
+			String account = PreferenceUtils.getPrefString(SdService.this,
+					SdConstants.CONS_ACCOUNT, "");
+			String password = PreferenceUtils.getPrefString(SdService.this,
+					SdConstants.CONS_PASSWORD, "");
+			if (!TextUtils.isEmpty(account) && !TextUtils.isEmpty(password))
+				login(account, password,null);
+		}
+		return START_STICKY;
+	}
+	
 	@Override
 	public void onDestroy() {
 		SdLog.i(TAG, "called onDestroy()");
 		super.onDestroy();
-		
+		SdBroadcastReceiver.mListeners.remove(this);
 		((AlarmManager) getSystemService(Context.ALARM_SERVICE)).cancel(mPAlarmIntent);// 取消重连闹钟
 		unregisterReceiver(mAlarmReceiver);// 注销广播监听
 		logout();
-	}
-
-	/**
-	 * 登录;
-	 * @param account
-	 * @param password
-	 * @param saveListener
-	 */
-	public void Login(final String account, final String password,final SaveListener saveListener) {
-		
-		this.mAccount=account;
-		this.mPassword=password;
-		
-		if (NetUtil.getNetworkState(this) == NetUtil.NETWORN_NONE) {
-			connectionFailed(SdMessage.MSG_NETWORK_ERROR);
-			saveListener.onFailure(SdMessage.MSG_NETWORK_ERROR);
-			return;
-		}
-		if (mConnectingThread != null) {
-			SdLog.i(TAG,"a connection is still goign on!");
-			return;
-		}
-		mConnectingThread = new Thread() {
-			@Override
-			public void run() {
-				try {
-					if (SdConnectionManager.getInstance().login(account, password)) {
-						// 登陆成功
-						postConnectionScuessed();
-						saveListener.onSuccess();	
-					} else {
-						// 登陆失败
-						postConnectionFailed(SdMessage.MSG_LOGIN_FAILED);
-						saveListener.onFailure(SdMessage.MSG_LOGIN_FAILED);
-					}
-				} catch (Exception e) {
-					String message = e.getLocalizedMessage();
-					// 登陆失败
-					if (e.getCause() != null){
-						message += "\n" + e.getCause().getLocalizedMessage();
-					}
-					postConnectionFailed(message);
-					saveListener.onFailure(SdMessage.MSG_LOGIN_FAILED);
-					SdLog.i(TAG, "YaximXMPPException in doConnect():");
-					e.printStackTrace();
-				} finally {
-					if (mConnectingThread != null)
-						synchronized (mConnectingThread) {
-							mConnectingThread = null;
-						}
-				}
-			}
-		};
-		mConnectingThread.start();
-	}
-	
-	/**
-	 * 注册新用户;
-	 * @param userName
-	 * @param password
-	 */
-	public void register(final String account,final String password,final SaveListener saveListener){
-		
-		if (NetUtil.getNetworkState(this) == NetUtil.NETWORN_NONE) {
-			saveListener.onFailure(SdMessage.MSG_NETWORK_ERROR);
-			return;
-		}
-		if (mConnectingThread != null) {
-			SdLog.i(TAG,"a connection is still goign on!");
-			return;
-		}
-		mConnectingThread = new Thread() {
-			@Override
-			public void run() {
-				try {
-					String strResult=SdConnectionManager.getInstance().register(account, password);
-					if(strResult.equals(SdMessage.MSG_RGISTER_SUCCESS)){
-						saveListener.onSuccess();
-					}else {
-						saveListener.onFailure(strResult);
-					}					
-				} catch (Exception e) {
-					String message = e.getLocalizedMessage();
-				
-					if (e.getCause() != null){
-						message += "\n" + e.getCause().getLocalizedMessage();
-					}
-					saveListener.onFailure(SdMessage.MSG_RGISTER_FAILED);
-					SdLog.i(TAG, "YaximXMPPException in doConnect():");
-					e.printStackTrace();
-				} finally {
-					if (mConnectingThread != null)
-						synchronized (mConnectingThread) {
-							mConnectingThread = null;
-						}
-				}
-			}
-		};
-		mConnectingThread.start();
-	}
-	
-	/**
-	 * 退出;
-	 * @return
-	 */
-	public boolean logout() {
-		boolean isLogout = false;
-		if (mConnectingThread != null) {
-			synchronized (mConnectingThread) {
-				try {
-					mConnectingThread.interrupt();
-					mConnectingThread.join(50);
-				} catch (InterruptedException e) {
-					SdLog.e(TAG,"doDisconnect: failed catching connecting thread");
-				} finally {
-					mConnectingThread = null;
-				}
-			}
-		}
-		SdConnectionManager.getInstance().logout();
-		connectionFailed(LOGOUT);// 手动退出;
-		
-		//设置为第一次登录;
-	    PreferenceUtils.setPrefBoolean(SdService.this,SdConstants.CONS_FIRST_LOGIN,true);
-		return isLogout;
 	}
 
 /*	// 发送消息
@@ -233,7 +131,7 @@ public class SdService extends Service implements EventListener{
 	 */
 	public boolean isAuthenticated() {
 		
-		return SdConnectionManager.getInstance().isAuthenticated();
+		return XmppConnectionManager.getInstance().isAuthenticated();
 	}
 
 	/**
@@ -286,7 +184,7 @@ public class SdService extends Service implements EventListener{
 			((AlarmManager) getSystemService(Context.ALARM_SERVICE)).cancel(mPAlarmIntent);
 			return;
 		}
-
+	
 		String account = PreferenceUtils.getPrefString(SdService.this,SdConstants.CONS_ACCOUNT, "");
 		String password = PreferenceUtils.getPrefString(SdService.this,SdConstants.CONS_PASSWORD, "");
 		
@@ -310,102 +208,227 @@ public class SdService extends Service implements EventListener{
 			}
 		}
 
-		private void connectionScuessed() {
-			mReconnectTimeout = RECONNECT_AFTER;// 重置重连的时间
-			PreferenceUtils.setPrefString(this, SdConstants.CONS_ACCOUNT,mAccount);//登录后账号自动保存;
-			PreferenceUtils.setPrefString(this, SdConstants.CONS_PASSWORD,mPassword);
-			PreferenceUtils.setPrefBoolean(this, SdConstants.CONS_FIRST_LOGIN, false);
-		}
+	/**
+	 * 连接成功;
+	 */
+	private void connectionScuessed() {
 
-		// 收到新消息
-		public void newMessage(final String from, final String message) {
-			mMainHandler.post(new Runnable() {
-				public void run() {
-					
-				}
-			});
-		}
-
-		public boolean isAppOnForeground() {
-			List<RunningTaskInfo> taskInfos = mActivityManager.getRunningTasks(1);
-			if (taskInfos.size() > 0
-					&& TextUtils.equals(getPackageName(),
-							taskInfos.get(0).topActivity.getPackageName())) {
-				return true;
-			}
-			return false;
-		}
-
-		/**
-		 * 该闹钟事件广播接收器，实现自动连接;
-		 * @author Render
-		 */
-		private class ReconnectAlarmReceiver extends BroadcastReceiver {
-			public void onReceive(Context ctx, Intent i) {
-				SdLog.d(TAG,"Alarm received.");
-				if (!PreferenceUtils.getPrefBoolean(SdService.this,
-						SdConstants.CONS_AUTO_RECONNECT, true)) {
-					return;
-				}
-				String account = PreferenceUtils.getPrefString(SdService.this,
-						SdConstants.CONS_ACCOUNT, "");
-				String password = PreferenceUtils.getPrefString(SdService.this,
-						SdConstants.CONS_PASSWORD, "");
-				if (TextUtils.isEmpty(account) || TextUtils.isEmpty(password)) {
-					SdLog.d(TAG,"account = null || password = null");
-					return;
-				}
-				Login(account, password,null);
-			}
-		}
-
-		/**
-		 * 监听网络改变的状态;
-		 */
-		@Override
-		public void onNetChange() {
-			if (NetUtil.getNetworkState(this) == NetUtil.NETWORN_NONE) {// 如果是网络断开，不作处理
-				connectionFailed(SdMessage.MSG_NETWORK_ERROR);
-				return;
-			}
-			if (isAuthenticated())// 如果已经连接上，直接返回
-				return;
-			String account = PreferenceUtils.getPrefString(SdService.this,
-					SdConstants.CONS_ACCOUNT, "");
-			String password = PreferenceUtils.getPrefString(SdService.this,
-					SdConstants.CONS_PASSWORD, "");
-			if (TextUtils.isEmpty(account) || TextUtils.isEmpty(password))// 如果没有帐号，也直接返回
-				return;
-			if (!PreferenceUtils.getPrefBoolean(this,SdConstants.CONS_AUTO_RECONNECT, true))// 不需要重连
-				return;
-			
-			Login(account, password,null);// 重连
-		}
-		
-    /**
-     * 监听手机开机时，是否直接连接;
-     */
-	@Override
-	public int onStartCommand(Intent intent, int flags, int startId) {
-		SdLog.i(TAG, "called onStartCommand()");
-	
-		if (intent != null
-				&& intent.getAction() != null
-				&& TextUtils.equals(intent.getAction(),
-						SdBroadcastReceiver.BOOT_COMPLETED_ACTION)) {
-			String account = PreferenceUtils.getPrefString(SdService.this,
-					SdConstants.CONS_ACCOUNT, "");
-			String password = PreferenceUtils.getPrefString(SdService.this,
-					SdConstants.CONS_PASSWORD, "");
-			if (!TextUtils.isEmpty(account) && !TextUtils.isEmpty(password))
-				Login(account, password,null);
-		}
-		return START_STICKY;
+		mReconnectTimeout = RECONNECT_AFTER;// 重置重连的时间
+		PreferenceUtils.setPrefString(this, SdConstants.CONS_ACCOUNT,mAccount);//登录后账号自动保存;
+		PreferenceUtils.setPrefString(this, SdConstants.CONS_PASSWORD,mPassword);
+		PreferenceUtils.setPrefBoolean(this, SdConstants.CONS_FIRST_LOGIN, false);
 	}
-	
+
+	/** 
+	 * 收到新消息;
+	 * @param from
+	 * @param message
+	 */
+	public void newMessage(final String from, final String message) {
+		mMainHandler.post(new Runnable() {
+			public void run() {
+				
+			}
+		});
+	}
+
+	public boolean isAppOnForeground() {
+		List<RunningTaskInfo> taskInfos = mActivityManager.getRunningTasks(1);
+		if (taskInfos.size() > 0
+				&& TextUtils.equals(getPackageName(),
+						taskInfos.get(0).topActivity.getPackageName())) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * 该闹钟事件广播接收器，实现自动连接;
+	 * @author Render
+	 */
+	private class ReconnectAlarmReceiver extends BroadcastReceiver {
+		public void onReceive(Context ctx, Intent i) {
+			SdLog.d(TAG,"Alarm received.");
+			if (!PreferenceUtils.getPrefBoolean(SdService.this,
+					SdConstants.CONS_AUTO_RECONNECT, true)) {
+				return;
+			}
+			String account = PreferenceUtils.getPrefString(SdService.this,
+					SdConstants.CONS_ACCOUNT, "");
+			String password = PreferenceUtils.getPrefString(SdService.this,
+					SdConstants.CONS_PASSWORD, "");
+			if (TextUtils.isEmpty(account) || TextUtils.isEmpty(password)) {
+				SdLog.d(TAG,"account = null || password = null");
+				return;
+			}
+			login(account, password,null);
+		}
+	}
+
+	/**
+	 * 监听网络改变的状态;
+	 */
+	@Override
+	public void onNetChange() {
+		if (NetUtil.getNetworkState(this) == NetUtil.NETWORN_NONE) {// 如果是网络断开，不作处理
+			connectionFailed(SdMessage.MSG_NETWORK_ERROR);
+			return;
+		}
+		if (isAuthenticated())// 如果已经连接上，直接返回
+			return;
+		String account = PreferenceUtils.getPrefString(SdService.this,
+				SdConstants.CONS_ACCOUNT, "");
+		String password = PreferenceUtils.getPrefString(SdService.this,
+				SdConstants.CONS_PASSWORD, "");
+		if (TextUtils.isEmpty(account) || TextUtils.isEmpty(password))// 如果没有帐号，也直接返回
+			return;
+		if (!PreferenceUtils.getPrefBoolean(this,SdConstants.CONS_AUTO_RECONNECT, true))// 不需要重连
+			return;
+		
+		login(account, password,null);// 重连;
+	}
+		
 	public class SdBinder extends Binder {
 		public SdService getService() {
 			return SdService.this;
 		}
 	}
+		
+	/**
+	 * 登录;
+	 * @param account
+	 * @param password
+	 * @param saveListener
+	 */
+	public void login(final String account, final String password,final SaveListener saveListener) {
+		
+		this.mAccount=account;
+		this.mPassword=password;
+		
+		if (NetUtil.getNetworkState(this) == NetUtil.NETWORN_NONE) {
+			connectionFailed(SdMessage.MSG_NETWORK_ERROR);
+			saveListener.onFailure(SdMessage.MSG_NETWORK_ERROR);
+			return;
+		}
+		
+		mConnectingThread = new Thread() {
+			@Override
+			public void run() {
+				try {
+					if (XmppConnectionManager.getInstance().login(account, password)) {
+						// 登陆成功
+						postConnectionScuessed();
+						
+						if(saveListener!=null){
+							saveListener.onSuccess();
+						}
+						
+					} else {
+						// 登陆失败
+						postConnectionFailed(SdMessage.MSG_LOGIN_FAILED);
+						
+						if(saveListener!=null){
+							saveListener.onFailure(SdMessage.MSG_LOGIN_FAILED);
+						}
+					}
+				} catch (Exception e) {
+					String message = e.getLocalizedMessage();
+					// 登陆失败
+					if (e.getCause() != null)
+						message += "\n" + e.getCause().getLocalizedMessage();
+					postConnectionFailed(message);
+					
+					if(saveListener!=null){
+						saveListener.onFailure(SdMessage.MSG_LOGIN_FAILED);
+					}
+					
+					SdLog.i("XMPPException in doConnect():");
+					e.printStackTrace();
+				} finally {
+					if (mConnectingThread != null)
+						synchronized (mConnectingThread) {
+							mConnectingThread = null;
+						}
+				}
+			}
+
+		};
+		mConnectingThread.start();
+	}
+	
+	/**
+	 * 注册用户;
+	 * @param account
+	 * @param password
+	 * @param saveListener
+	 */
+	public void register(final String account, final String password,final SaveListener saveListener){
+		if (NetUtil.getNetworkState(this) == NetUtil.NETWORN_NONE) {
+			saveListener.onFailure(SdMessage.MSG_NETWORK_ERROR);
+			return ;
+		}
+		
+		mConnectingThread=new Thread(){
+			@Override
+			public void run() {
+				
+				try {
+					String strResult=XmppConnectionManager.getInstance().register(account, password);
+					if(strResult.equals(SdMessage.MSG_RGISTER_SUCCESS)){
+						
+						saveListener.onSuccess();
+						
+					}else {
+						saveListener.onFailure(strResult);
+					}				
+				} catch (Exception e) {
+					String message = e.getLocalizedMessage();
+					
+					if (e.getCause() != null){
+						message += "\n" + e.getCause().getLocalizedMessage();
+					}
+					saveListener.onFailure(SdMessage.MSG_RGISTER_FAILED);
+					SdLog.i("YaximXMPPException in doConnect():");
+					e.printStackTrace();
+				} finally {
+					if (mConnectingThread != null)
+						synchronized (mConnectingThread) {
+							mConnectingThread = null;
+						}
+				}
+			}
+		};
+		mConnectingThread.start();
+	}
+	
+	/**
+	 * 退出;
+	 * @return
+	 */
+	public boolean logout() {
+		
+		if (mConnectingThread != null) {
+			synchronized (mConnectingThread) {
+				try {
+					mConnectingThread.interrupt();
+					mConnectingThread.join(50);
+				} catch (InterruptedException e) {
+					SdLog.i("doDisconnect: failed catching connecting thread");
+				} finally {
+					mConnectingThread = null;
+				}
+			}
+		}
+		
+		XmppConnectionManager.getInstance().logout();
+		connectionFailed(LOGOUT);// 手动退出;
+		
+		//设置为第一次登录;
+	    PreferenceUtils.setPrefBoolean(SdService.this,SdConstants.CONS_FIRST_LOGIN,true);
+	    PreferenceUtils.setPrefString(SdService.this,SdConstants.CONS_ACCOUNT,"");
+	    PreferenceUtils.setPrefString(SdService.this,SdConstants.CONS_PASSWORD,"");
+	    
+		return true;
+	}
+
 }

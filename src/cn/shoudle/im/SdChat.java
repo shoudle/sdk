@@ -55,6 +55,7 @@ public class SdChat {
 			return;
 		
 		Intent mServiceIntent = new Intent(mContext, SdService.class);
+		mContext.startService(mServiceIntent);
 		mContext.bindService(mServiceIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
 		SdLog.i(TAG, "[bind service]");
 	}
@@ -70,14 +71,12 @@ public class SdChat {
 
 		@Override
 		public void onServiceConnected(ComponentName name, IBinder service) {
-			mSdService = ((SdService.SdBinder) service).getService();
 			
-			if(mSdService==null){
-				try {
-					throw new Exception("[bind service failed!]");
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+			try {
+				mSdService = ((SdService.SdBinder) service).getService();
+			} catch (Exception e) {
+				SdLog.i(e.getLocalizedMessage());
+				e.printStackTrace();
 			}
 		}
 

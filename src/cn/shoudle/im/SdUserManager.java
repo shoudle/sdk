@@ -2,6 +2,9 @@ package cn.shoudle.im;
 
 import cn.shoudle.listener.SaveListener;
 import cn.shoudle.service.SdService;
+import cn.shoudle.util.PreferenceUtils;
+import cn.shoudle.util.SdLog;
+import cn.shoudle.v1.SdConstants;
 import cn.shoudle.v1.SdMessage;
 import android.content.Context;
 /**
@@ -12,21 +15,19 @@ public class SdUserManager {
 
 	private static Context mContext;
 	private static SdUserManager instance;
-	private static Object instance_lock;
 	
-	static{
-		instance_lock=new Object();
-	}
-	
-	public static SdUserManager getInstance(Context ct){
+	public synchronized static SdUserManager getInstance(Context ct){
 
-		synchronized (instance_lock) {
-			mContext=ct;
-			if(instance==null){
-				instance=new SdUserManager();	
-			}
-			return instance;
+		mContext=ct;
+		
+		if(ct==null){
+			SdLog.i("the context is null");
 		}
+		
+		if(instance==null){
+			instance=new SdUserManager();	
+		}
+		return instance;
 	}
 	
 	/**
@@ -37,7 +38,8 @@ public class SdUserManager {
 		SdService sdService=SdChat.getInstance(mContext).getService();
 		
 		if(sdService!=null){
-			sdService.Login(userName, password,saveListener);
+			sdService.login(userName, password,saveListener);
+			
 		}else {
 			saveListener.onFailure(SdMessage.MSG_CORE_SERVICE_NULL);
 		}
@@ -49,12 +51,13 @@ public class SdUserManager {
 	 * @param password
 	 * @param saveListener
 	 */
-	public void register(String userName,String password,SaveListener saveListener){
+	public void register( String account, String password, SaveListener saveListener){
 		
 		SdService sdService=SdChat.getInstance(mContext).getService();
 		
 		if(sdService!=null){
-			sdService.register(userName, password, saveListener);
+			sdService.register(account, password, saveListener);
+			
 		}else {
 			saveListener.onFailure(SdMessage.MSG_CORE_SERVICE_NULL);
 		}
@@ -69,6 +72,7 @@ public class SdUserManager {
 		
 		if(sdService!=null){
 			sdService.logout();
+			
 		}
 	}
 }

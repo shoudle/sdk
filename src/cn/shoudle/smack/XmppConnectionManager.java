@@ -1,4 +1,4 @@
-package cn.shoudle.service;
+package cn.shoudle.smack;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -75,6 +75,7 @@ import org.jivesoftware.smackx.search.UserSearch;
 import org.jivesoftware.smackx.search.UserSearchManager;
 
 import android.graphics.drawable.Drawable;
+import cn.shoudle.service.SdService;
 import cn.shoudle.util.FormatToolsUtil;
 import cn.shoudle.util.SdLog;
 import cn.shoudle.v1.SdConfig;
@@ -85,17 +86,17 @@ import cn.shoudle.v1.SdMessage;
  * @author Render;
  *
  */
-class SdConnectionManager {
+public class XmppConnectionManager {
 
 	private XMPPConnection mXmppConnection=null;
-	private static SdConnectionManager mSdConnectionManager=new SdConnectionManager();
+	private static XmppConnectionManager mSdConnectionManager=new XmppConnectionManager();
 	private SdService mSdService;
 	
 	/**
 	 * 单例模式;
 	 * @return
 	 */
-	synchronized public static SdConnectionManager getInstance(){
+	synchronized public static XmppConnectionManager getInstance(){
 		return mSdConnectionManager;
 	}
 	
@@ -122,31 +123,27 @@ class SdConnectionManager {
 		
 		@Override
 		public void reconnectionSuccessful() {
-			// TODO Auto-generated method stub
 			
 		}
 		
 		@Override
 		public void reconnectionFailed(Exception arg0) {
-			// TODO Auto-generated method stub
 			
 		}
 		
 		@Override
 		public void reconnectingIn(int arg0) {
-			// TODO Auto-generated method stub
-			
+
 		}
 		
 		@Override
 		public void connectionClosedOnError(Exception e) {
-			// TODO Auto-generated method stub
+			
 			mSdService.postConnectionFailed(e.getMessage());
 		}
 		
 		@Override
 		public void connectionClosed() {
-			// TODO Auto-generated method stub
 			
 		}
 	};
@@ -155,9 +152,9 @@ class SdConnectionManager {
 	 * 打开连接;
 	 * @return
 	 */
-	public boolean openConnection(){
+	private boolean openConnection(){
 		try {
-			if(null==mXmppConnection||!mXmppConnection.isAuthenticated()){
+			if(null==mXmppConnection){
 				
 				XMPPConnection.DEBUG_ENABLED=true;
 				ConnectionConfiguration config=new ConnectionConfiguration(SdConfig.SD_SERVER,
@@ -213,10 +210,13 @@ class SdConnectionManager {
 	 * @return
 	 */
 	public boolean login(String account,String password){
-		
 		try{
 			if(getConnection()==null){
 				return false;
+			}
+			if(mXmppConnection.isConnected()){
+				mXmppConnection.disconnect();
+				mXmppConnection=null;
 			}
 			getConnection().login(account, password);
 			
@@ -231,6 +231,7 @@ class SdConnectionManager {
 		}
 		catch (XMPPException e) {
 			e.printStackTrace();
+			SdLog.i(e.getLocalizedMessage());
 		}
 		return false;
 	}
@@ -309,11 +310,9 @@ class SdConnectionManager {
     }  
   
     /** 
-     * 获取某个组里面的所有好友 
-     *  
+     * 获取某个组里面的所有好友  
      * @param roster 
-     * @param groupName 
-     *            组名 
+     * @param groupName 组名 
      * @return 
      */  
     public List<RosterEntry> getEntriesByGroup(String groupName) {  

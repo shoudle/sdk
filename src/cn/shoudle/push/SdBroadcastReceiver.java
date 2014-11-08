@@ -15,7 +15,7 @@ import android.text.TextUtils;
 
 public class SdBroadcastReceiver extends BroadcastReceiver{
 
-	public static final String BOOT_COMPLETED_ACTION = "com.way.action.BOOT_COMPLETED";
+	public static final String BOOT_COMPLETED_ACTION = "com.shoudle.action.BOOT_COMPLETED";
 	private static final String TAG = "SdBroadcastReceiver";
 	public static ArrayList<EventListener> mListeners = new ArrayList<EventListener>();
 
@@ -28,7 +28,7 @@ public class SdBroadcastReceiver extends BroadcastReceiver{
 				for (EventListener handler : mListeners) {
 					handler.onNetChange();
 				}
-		} else if (intent.getAction().equals(Intent.ACTION_SHUTDOWN)) {
+		} else if (intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED)) {
 			SdLog.d(TAG,"System shutdown, stopping service.");
 			Intent xmppServiceIntent = new Intent(context, SdService.class);
 			context.stopService(xmppServiceIntent);

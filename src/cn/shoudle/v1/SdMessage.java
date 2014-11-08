@@ -2,7 +2,7 @@ package cn.shoudle.v1;
 
 public class SdMessage {
 
-	public static final  String MSG_NETWORK_ERROR="网络错误"; 
+	public static final  String MSG_NETWORK_ERROR="当前网络不可用，请检查网络设置"; 
 	public static final  String MSG_LOGIN_FAILED="登录失败";  
 	public static final  String MSG_LOGIN_SUCCESS="登录成功"; 
 	public static final  String MSG_CORE_SERVICE_NULL="核心服务为空"; 
