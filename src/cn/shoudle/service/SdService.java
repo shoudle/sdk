@@ -307,7 +307,10 @@ public class SdService extends Service implements EventListener{
 		
 		if (NetUtil.getNetworkState(this) == NetUtil.NETWORN_NONE) {
 			connectionFailed(SdMessage.MSG_NETWORK_ERROR);
-			saveListener.onFailure(SdMessage.MSG_NETWORK_ERROR);
+			
+			if(saveListener!=null){
+				saveListener.onFailure(SdMessage.MSG_NETWORK_ERROR);	
+			}
 			return;
 		}
 		
